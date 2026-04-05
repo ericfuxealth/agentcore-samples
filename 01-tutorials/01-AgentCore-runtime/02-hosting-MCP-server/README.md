@@ -49,7 +49,7 @@ For demonstration purposes, we will use a very simple MCP server with 3 tools: `
 
 * Hosting MCP Server
 
-### Addtional Note (Xealth)
+### Additional Xealth Note
 ```bash
 xp dev-dev
 set | grep ^AWS > .env

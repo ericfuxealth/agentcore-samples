@@ -2,9 +2,9 @@
 
 ## Overview
 
-In this tutorial we will learn how to implement streaming responses using Amazon Bedrock AgentCore Runtime with your existing agents. 
+In this tutorial we will learn how to implement streaming responses using Amazon Bedrock AgentCore Runtime with your existing agents.
 
-We will focus on a Strands Agents with Amazon Bedrock model example that demonstrates real-time streaming capabilities. 
+We will focus on a Strands Agents with Amazon Bedrock model example that demonstrates real-time streaming capabilities.
 
 ### Tutorial Details
 
@@ -21,7 +21,7 @@ We will focus on a Strands Agents with Amazon Bedrock model example that demonst
 
 ### Tutorial Architecture
 
-In this tutorial we will describe how to deploy a streaming agent to AgentCore runtime. 
+In this tutorial we will describe how to deploy a streaming agent to AgentCore runtime.
 
 For demonstration purposes, we will use a Strands Agent using Amazon Bedrock models with streaming capabilities.
 
@@ -38,3 +38,12 @@ In our example we will use a simple agent with three tools: `get_weather`, `get_
 * Using Amazon Bedrock models with streaming capabilities
 * Using Strands Agents with async streaming support
 * Enhanced user experience with progressive response display
+
+### Additional Xealth Note
+
+```bash
+uv pip install --force-reinstall -U -r requirements.txt --quiet
+xp
+set | grep ^AWS > .env
+echo "USER_NAME=${$(whoami)//./_}" >> .env
+```
