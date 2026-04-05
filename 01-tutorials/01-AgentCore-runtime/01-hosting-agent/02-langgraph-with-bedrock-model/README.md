@@ -40,7 +40,6 @@ In our example we will use a very simple agent with two tools: `get_weather` and
 
 ### Addtional Note (Xealth)
 ```bash
-cd 01-tutorials/01-AgentCore-runtime/01-hosting-agent/02-langgraph-with-bedrock-model
 uv pip install -r ./requirements.txt
 xp dev-dev
 set | grep ^AWS > .env

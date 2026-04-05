@@ -3,5 +3,7 @@
 Dockerfile
 invoke_mcp_tools.py
 mcp_server.py
-my_mcp_client.py
-my_mcp_client_remote.py
+mcp_client.py
+mcp_client_remote.py
+mcp_client_remote_boto3.py
+invoke_mcp_tools_boto3.py
