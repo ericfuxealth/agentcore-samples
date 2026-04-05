@@ -2,7 +2,7 @@
 
 ## Overview
 
-In this tutorial we will learn how to host your existing agent, using Amazon Bedrock AgentCore Runtime. 
+In this tutorial we will learn how to host your existing agent, using Amazon Bedrock AgentCore Runtime.
 
 We will focus on a LangGraph with Amazon Bedrock model example. For Strands Agents with Amazon Bedrock model check [here](../01-strands-with-bedrock-model)
 and for a Strands Agents with an OpenAI model check [here](../03-strands-with-openai-model).
@@ -22,11 +22,11 @@ and for a Strands Agents with an OpenAI model check [here](../03-strands-with-op
 
 ### Tutorial Architecture
 
-In this tutorial we will describe how to deploy an existing agent to AgentCore runtime. 
+In this tutorial we will describe how to deploy an existing agent to AgentCore runtime.
 
 For demonstration purposes, we will  use a LangGraph agent using Amazon Bedrock models
 
-In our example we will use a very simple agent with two tools: `get_weather` and `get_time`. 
+In our example we will use a very simple agent with two tools: `get_weather` and `get_time`.
 
 <div style="text-align:left">
     <img src="images/architecture_runtime.png" width="100%"/>
@@ -37,3 +37,16 @@ In our example we will use a very simple agent with two tools: `get_weather` and
 * Hosting Agents on Amazon Bedrock AgentCore Runtime
 * Using Amazon Bedrock models
 * Using LangGraph
+
+### Addtional Note (Xealth)
+```bash
+cd 01-tutorials/01-AgentCore-runtime/01-hosting-agent/02-langgraph-with-bedrock-model
+uv pip install -r ./requirements.txt
+xp dev-dev
+set | grep ^AWS > .env
+echo "USER_NAME=${$(whoami)//./_}" >> .env
+```
+Run through the tutorial.
+
+Cleanup: You must manually delete the CodeBuild job.
+
