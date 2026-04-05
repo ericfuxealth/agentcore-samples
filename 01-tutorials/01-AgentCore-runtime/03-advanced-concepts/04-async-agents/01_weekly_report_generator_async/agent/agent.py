@@ -27,7 +27,8 @@ from tools import (
 app = BedrockAgentCoreApp()
 
 # Create the agent with all tools
-model_id = "global.anthropic.claude-sonnet-4-20250514-v1:0"
+# model_id = "global.anthropic.claude-sonnet-4-20250514-v1:0"
+model_id = "global.anthropic.claude-haiku-4-5-20251001-v1:0"
 model = BedrockModel(model_id=model_id)
 
 weekly_update_agent = Agent(
@@ -73,7 +74,7 @@ When generating reports, follow this structure:
 ## 🎯 Project Status
 - Project data summary
 
-## 👥 Team Highlights  
+## 👥 Team Highlights
 - Team update summaries
 
 ## 📈 Key Performance Indicators
@@ -123,7 +124,7 @@ def agent(payload):
     Supports method routing for ping checks and report generation.
     """
     global _active_task_count
-    
+
     # Check if this is a ping request
     method = payload.get("method")
     if method == "ping":
@@ -132,23 +133,23 @@ def agent(payload):
             "status": status,
             "active_tasks": _active_task_count
         }
-    
+
     # Normal report generation request
     user_input = payload.get("prompt")
     print(f"📥 Received request: {user_input}")
-    
+
     # Start tracking the async task
     task_id = app.add_async_task("weekly_report_generation", {"prompt": user_input})
     _active_task_count += 1
     print(f"🔄 Started async task: {task_id} (active: {_active_task_count})")
-    
+
     # Run the agent in a background thread
     def generate_report():
         global _active_task_count
         try:
             print("🤖 Agent is processing...")
             response = weekly_update_agent(user_input)
-            
+
             # Handle different response types
             if isinstance(response, str):
                 result = response
@@ -158,7 +159,7 @@ def agent(payload):
                 result = response.get('message', {}).get('content', [{}])[0].get('text', str(response))
             else:
                 result = str(response)
-            
+
             print(f"✅ Report generation completed")
         except Exception as e:
             import traceback
@@ -169,10 +170,10 @@ def agent(payload):
             app.complete_async_task(task_id)
             _active_task_count -= 1
             print(f"✅ Task {task_id} marked as complete (active: {_active_task_count})")
-    
+
     # Start background thread
     threading.Thread(target=generate_report, daemon=True).start()
-    
+
     return {
         "message": f"Weekly report generation started (Task ID: {task_id}). Agent status is now BUSY.",
         "task_id": task_id,
