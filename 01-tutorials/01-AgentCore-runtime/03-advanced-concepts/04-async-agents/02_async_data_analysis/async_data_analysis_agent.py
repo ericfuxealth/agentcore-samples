@@ -966,7 +966,8 @@ primary_agent = Agent(
     name="primary_agent",
     system_prompt=PRIMARY_AGENT_SYSTEM_PROMPT,
     tools=[async_analysis_task, get_task_results, get_task_status],
-    model=sonnet,
+    # model=sonnet,
+    model=haiku
 )
 
 
