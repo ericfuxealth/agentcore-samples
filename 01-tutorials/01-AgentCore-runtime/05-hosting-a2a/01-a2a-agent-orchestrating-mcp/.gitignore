@@ -9,6 +9,10 @@ outputs
 old/
 temp/
 
+agents/strands_aws_docs.py
+agents/strands_aws_blogs_news.py
+agents/requirements.txt
+agents/orchestrator.py
 
 .bedrock_agentcore.yaml
 .dockerignore

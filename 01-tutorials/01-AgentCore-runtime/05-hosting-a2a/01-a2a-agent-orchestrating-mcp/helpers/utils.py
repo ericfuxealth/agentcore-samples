@@ -20,6 +20,12 @@ from typing import Dict, Optional
 import boto3
 from boto3.session import Session
 
+# this is the user running the tutorial, not to be confused with USERNAME
+user_name = os.environ.get("USER_NAME")
+if not user_name:
+    # throw an error if USER_NAME is not set
+    raise EnvironmentError("USER_NAME environment variable is not set")
+
 sts_client = boto3.client("sts")
 
 # Get AWS account details
@@ -33,12 +39,12 @@ SSM_DOCS_AGENT_ROLE_ARN = (
 POLICY_NAME = f"AWSDocsAssistantBedrockAgentCorePolicy-{REGION}"
 LOG_GROUP_BASE_NAME = "/aws/bedrock-agentcore/runtimes/"
 
-SSM_DOCS_AGENT_ARN = "/app/aws_docs_assistant/agentcore/agent_arn"
-SSM_BLOGS_AGENT_ARN = "/app/aws_blogs_assistant/agentcore/agent_arn"
+SSM_DOCS_AGENT_ARN = f"/app/aws_docs_assistant/agentcore/agent_arn_{user_name}"
+SSM_BLOGS_AGENT_ARN = f"/app/aws_blogs_assistant/agentcore/agent_arn_{user_name}"
 
-AWS_DOCS_ROLE_NAME = f"AWSDocsAssistantBedrockAgentCoreRole-{REGION}"
-AWS_BLOG_ROLE_NAME = f"AWSBlogsAssistantBedrockAgentCoreRole-{REGION}"
-ORCHESTRATOR_ROLE_NAME = f"AWSOrchestratorAssistantAgentCoreRole-{REGION}"
+AWS_DOCS_ROLE_NAME = f"AWSDocsAssistantBedrockAgentCoreRole-{user_name}-{REGION}"
+AWS_BLOG_ROLE_NAME = f"AWSBlogsAssistantBedrockAgentCoreRole-{user_name}-{REGION}"
+ORCHESTRATOR_ROLE_NAME = f"AWSOrchestratorAssistantAgentCoreRole-{user_name}-{REGION}"
 
 
 # General functions
@@ -177,7 +183,7 @@ def setup_cognito_user_pool() -> Optional[Dict[str, str]]:
     try:
         # Create User Pool
         user_pool_response = cognito_client.create_user_pool(
-            PoolName="MCPServerPool",
+            PoolName=f"MCPServerPool_{user_name}",
             Policies={"PasswordPolicy": {"MinimumLength": 8}}
         )
         pool_id = user_pool_response["UserPool"]["Id"]
