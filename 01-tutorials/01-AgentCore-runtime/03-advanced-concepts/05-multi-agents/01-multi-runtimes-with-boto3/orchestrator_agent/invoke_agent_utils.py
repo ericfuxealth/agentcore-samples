@@ -2,7 +2,7 @@
 import boto3
 import json
 
-def invoke_agent_with_boto3 (agent_arn, user_query):
+def invoke_agent_with_boto3 (agent_arn, user_query, user_name):
     agentcore_client = boto3.client(
         'bedrock-agentcore',
     )
@@ -10,7 +10,7 @@ def invoke_agent_with_boto3 (agent_arn, user_query):
     boto3_response = agentcore_client.invoke_agent_runtime(
         agentRuntimeArn=agent_arn,
         qualifier="DEFAULT",
-        payload=json.dumps({"prompt": user_query})
+        payload=json.dumps({"prompt": user_query, "user_name": user_name})
     )
 
     if "text/event-stream" in boto3_response.get("contentType", ""):
@@ -22,7 +22,7 @@ def invoke_agent_with_boto3 (agent_arn, user_query):
                 line = line[6:]
                 if line.startswith('"') and line.endswith('"'):
                     line = line[1:-1]
-                
+
                 line = line.replace('\\n', '\n')
                 print(line, end="", flush=True)
                 result += line
@@ -31,4 +31,4 @@ def invoke_agent_with_boto3 (agent_arn, user_query):
         response_data = json.loads(response_body)
         result = response_data
 
-    return result 
+    return result
