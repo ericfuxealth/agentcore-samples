@@ -9,7 +9,7 @@ from claude_agent_sdk import (
 )
 
 os.environ["CLAUDE_CODE_USE_BEDROCK"]="1"
-os.environ["ANTHROPIC_MODEL"]="global.anthropic.claude-sonnet-4-6"
+os.environ["ANTHROPIC_MODEL"]="global.anthropic.claude-haiku-4-5-20251001-v1:0" # "global.anthropic.claude-sonnet-4-6"
 
 app = BedrockAgentCoreApp()
 
