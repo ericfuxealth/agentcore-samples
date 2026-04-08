@@ -6,18 +6,25 @@ import botocore
 from botocore.exceptions import ClientError
 import requests
 import time
+import os
+
+# this is the user running the tutorial
+tutorial_user_name = os.getenv("USER_NAME")
+if not tutorial_user_name:
+    raise ValueError("USER_NAME environment variable is not set. Please set it in the .env file.")
+
 
 def setup_cognito_user_pool():
     boto_session = Session()
     region = boto_session.region_name
-    
+
     # Initialize Cognito client
     cognito_client = boto3.client('cognito-idp', region_name=region)
-    
+
     try:
         # Create User Pool
         user_pool_response = cognito_client.create_user_pool(
-            PoolName='MCPServerPool',
+            PoolName='MCPServerPool_' + tutorial_user_name,
             Policies={
                 'PasswordPolicy': {
                     'MinimumLength': 8
@@ -25,7 +32,7 @@ def setup_cognito_user_pool():
             }
         )
         pool_id = user_pool_response['UserPool']['Id']
-        
+
         # Create App Client
         app_client_response = cognito_client.create_user_pool_client(
             UserPoolId=pool_id,
@@ -37,7 +44,7 @@ def setup_cognito_user_pool():
             ]
         )
         client_id = app_client_response['UserPoolClient']['ClientId']
-        
+
         # Create User
         cognito_client.admin_create_user(
             UserPoolId=pool_id,
@@ -45,7 +52,7 @@ def setup_cognito_user_pool():
             TemporaryPassword='Temp123!',
             MessageAction='SUPPRESS'
         )
-        
+
         # Set Permanent Password
         cognito_client.admin_set_user_password(
             UserPoolId=pool_id,
@@ -53,7 +60,7 @@ def setup_cognito_user_pool():
             Password='MyPassword123!',
             Permanent=True
         )
-        
+
         # Authenticate User and get Access Token
         auth_response = cognito_client.initiate_auth(
             ClientId=client_id,
@@ -64,13 +71,13 @@ def setup_cognito_user_pool():
             }
         )
         bearer_token = auth_response['AuthenticationResult']['AccessToken']
-        
+
         # Output the required values
         print(f"Pool id: {pool_id}")
         print(f"Discovery URL: https://cognito-idp.{region}.amazonaws.com/{pool_id}/.well-known/openid-configuration")
         print(f"Client ID: {client_id}")
         print(f"Bearer Token: {bearer_token}")
-        
+
         # Return values if needed for further processing
         return {
             'pool_id': pool_id,
@@ -78,7 +85,7 @@ def setup_cognito_user_pool():
             'bearer_token': bearer_token,
             'discovery_url':f"https://cognito-idp.{region}.amazonaws.com/{pool_id}/.well-known/openid-configuration"
         }
-        
+
     except Exception as e:
         print(f"Error: {e}")
         return None
@@ -91,11 +98,11 @@ def get_or_create_user_pool(cognito, USER_POOL_NAME):
             response = cognito.describe_user_pool(
                 UserPoolId=user_pool_id
             )
-        
+
             # Get the domain from user pool description
             user_pool = response.get('UserPool', {})
             domain = user_pool.get('Domain')
-        
+
             if domain:
                 region = user_pool_id.split('_')[0] if '_' in user_pool_id else REGION
                 domain_url = f"https://{domain}.auth.{region}.amazoncognito.com"
@@ -174,7 +181,7 @@ def get_token(user_pool_id: str, client_id: str, client_secret: str, scope_strin
 
     except requests.exceptions.RequestException as err:
         return {"error": str(err)}
-    
+
 def create_agentcore_role(agent_name):
     iam_client = boto3.client('iam')
     agentcore_role_name = f'agentcore-{agent_name}-role'
@@ -444,18 +451,18 @@ def create_agentcore_gateway_role(gateway_name):
 def create_agentcore_gateway_role_with_region(gateway_name, region):
     """
     Create an IAM role for AgentCore Gateway with explicit region specification.
-    
+
     Args:
         gateway_name: Name of the gateway
         region: AWS region where the gateway will be deployed
-    
+
     Returns:
         IAM role response
     """
     iam_client = boto3.client('iam')
     agentcore_gateway_role_name = f'agentcore-{gateway_name}-role'
     account_id = boto3.client("sts").get_caller_identity()["Account"]
-    
+
     role_policy = {
         "Version": "2012-10-17",
         "Statement": [{
@@ -489,7 +496,7 @@ def create_agentcore_gateway_role_with_region(gateway_name, region):
 
     assume_role_policy_document_json = json.dumps(assume_role_policy_document)
     role_policy_document = json.dumps(role_policy)
-    
+
     try:
         agentcore_iam_role = iam_client.create_role(
             RoleName=agentcore_gateway_role_name,
@@ -630,7 +637,7 @@ def create_gateway_lambda(lambda_function_code_path) -> dict[str, int]:
     region = boto_session.region_name
 
     return_resp = {"lambda_function_arn": "Pending", "exit_code": 1}
-    
+
     # Initialize Cognito client
     lambda_client = boto3.client('lambda', region_name=region)
     iam_client = boto3.client('iam', region_name=region)
@@ -686,7 +693,7 @@ def create_gateway_lambda(lambda_function_code_path) -> dict[str, int]:
 
     if role_arn != "":
         print("Creating lambda function")
-        # Create lambda function    
+        # Create lambda function
         try:
             lambda_response = lambda_client.create_function(
                 FunctionName=lambda_function_name,
@@ -713,7 +720,7 @@ def create_gateway_lambda(lambda_function_code_path) -> dict[str, int]:
 
     return return_resp
 
-def delete_gateway(gateway_client,gatewayId): 
+def delete_gateway(gateway_client,gatewayId):
     print("Deleting all targets for gateway", gatewayId)
     list_response = gateway_client.list_gateway_targets(
             gatewayIdentifier = gatewayId,
@@ -874,7 +881,7 @@ def create_gateway_invoke_tool_role(role_name, gateway_id, current_arn):
 def get_client_secrets(cognito_client, user_pool_id, client_configs):
     print("Retrieving client secrets from Cognito...")
     client_secrets = {}
-    
+
     for client_config in client_configs:
         try:
             response = cognito_client.describe_user_pool_client(
@@ -885,7 +892,7 @@ def get_client_secrets(cognito_client, user_pool_id, client_configs):
             print(f"  ✓ Retrieved secret for {client_config['name']}")
         except Exception as e:
             print(f"  ✗ Failed to get secret for {client_config['name']}: {e}")
-    
+
     print(f"\n✓ Retrieved {len(client_secrets)} client secrets")
     return client_secrets
 
@@ -894,7 +901,7 @@ def create_dynamodb_table(table_name, key_schema, attribute_definitions, region=
     Create DynamoDB table with specified schema.
     """
     dynamodb_client = boto3.client('dynamodb', region_name=region)
-    
+
     try:
         response = dynamodb_client.create_table(
             TableName=table_name,
@@ -902,16 +909,16 @@ def create_dynamodb_table(table_name, key_schema, attribute_definitions, region=
             AttributeDefinitions=attribute_definitions,
             BillingMode='PAY_PER_REQUEST'
         )
-        
+
         print(f"✓ Table created: {table_name}")
-        
+
         # Wait for table to be active
         waiter = dynamodb_client.get_waiter('table_exists')
         waiter.wait(TableName=table_name)
         print(f"  Table is active")
-        
+
         return table_name
-        
+
     except ClientError as e:
         if e.response['Error']['Code'] == 'ResourceInUseException':
             print(f"⚠ Table already exists: {table_name}")
@@ -925,10 +932,10 @@ def batch_write_dynamodb(table_name, items, region='us-east-1'):
     Batch write items to DynamoDB table.
     """
     from datetime import datetime
-    
+
     dynamodb = boto3.resource('dynamodb', region_name=region)
     table = dynamodb.Table(table_name)
-    
+
     # Batch write
     with table.batch_writer() as batch:
         for item in items:
@@ -938,14 +945,14 @@ def batch_write_dynamodb(table_name, items, region='us-east-1'):
             if 'UpdatedAt' not in item:
                 item['UpdatedAt'] = datetime.utcnow().isoformat()
             batch.put_item(Item=item)
-    
+
     print(f"✓ Wrote {len(items)} items to {table_name}")
     return len(items)
 
 
 def create_lambda_role_with_policies(role_name, policy_statements, description='Lambda execution role'):
     iam_client = boto3.client('iam')
-    
+
     # Trust policy for Lambda
     trust_policy = {
         "Version": "2012-10-17",
@@ -955,7 +962,7 @@ def create_lambda_role_with_policies(role_name, policy_statements, description='
             "Action": "sts:AssumeRole"
         }]
     }
-    
+
     try:
         role_response = iam_client.create_role(
             RoleName=role_name,
@@ -964,7 +971,7 @@ def create_lambda_role_with_policies(role_name, policy_statements, description='
         )
         role_arn = role_response['Role']['Arn']
         print(f"✓ IAM role created: {role_name}")
-        
+
     except ClientError as e:
         if e.response['Error']['Code'] == 'EntityAlreadyExists':
             print(f"⚠ Role already exists: {role_name}")
@@ -972,20 +979,20 @@ def create_lambda_role_with_policies(role_name, policy_statements, description='
             role_arn = role_response['Role']['Arn']
         else:
             raise
-    
+
     # Attach basic Lambda execution policy
     iam_client.attach_role_policy(
         RoleName=role_name,
         PolicyArn='arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
     )
-    
+
     # Attach custom policies if provided
     if policy_statements:
         custom_policy = {
             "Version": "2012-10-17",
             "Statement": policy_statements
         }
-        
+
         try:
             iam_client.put_role_policy(
                 RoleName=role_name,
@@ -995,10 +1002,10 @@ def create_lambda_role_with_policies(role_name, policy_statements, description='
             print(f"  ✓ Custom policy attached")
         except Exception as e:
             print(f"  ⚠ Policy error: {e}")
-    
+
     # Wait for role to propagate
     time.sleep(10)
-    
+
     return role_arn
 
 
@@ -1009,25 +1016,25 @@ def deploy_lambda_function(function_name, role_arn, lambda_code_path, environmen
     import zipfile
     import io
     from pathlib import Path
-    
+
     lambda_client = boto3.client('lambda', region_name=region)
-    
+
     # Read Lambda code
     lambda_code_path = Path(lambda_code_path)
     if not lambda_code_path.exists():
         raise FileNotFoundError(f"Lambda code not found: {lambda_code_path}")
-    
+
     with open(lambda_code_path, 'r') as f:
         lambda_code = f.read()
-    
+
     # Create deployment package
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
         zip_file.writestr('lambda_function.py', lambda_code)
-    
+
     zip_buffer.seek(0)
     deployment_package = zip_buffer.read()
-    
+
     # Build function config
     function_config = {
         'FunctionName': function_name,
@@ -1039,16 +1046,16 @@ def deploy_lambda_function(function_name, role_arn, lambda_code_path, environmen
         'Timeout': timeout,
         'MemorySize': memory_size
     }
-    
+
     # Add environment variables if provided
     if environment_vars:
         function_config['Environment'] = {'Variables': environment_vars}
-    
+
     try:
         response = lambda_client.create_function(**function_config)
         lambda_arn = response['FunctionArn']
         print(f"✓ Lambda created: {function_name}")
-        
+
     except ClientError as e:
         if e.response['Error']['Code'] == 'ResourceConflictException':
             print(f"⚠ Lambda already exists: {function_name}")
@@ -1056,13 +1063,13 @@ def deploy_lambda_function(function_name, role_arn, lambda_code_path, environmen
             lambda_arn = response['Configuration']['FunctionArn']
         else:
             raise
-    
+
     return lambda_arn
 
 def grant_gateway_invoke_permission(function_name, region='us-east-1'):
     """
     Grant Gateway permission to invoke the Lambda interceptor.
-    
+
     Args:
         function_name: Name of the Lambda function
         region: AWS region
@@ -1070,7 +1077,7 @@ def grant_gateway_invoke_permission(function_name, region='us-east-1'):
     lambda_client = boto3.client('lambda', region_name=region)
     sts_client = boto3.client('sts')
     account_id = sts_client.get_caller_identity()['Account']
-    
+
     try:
         lambda_client.add_permission(
             FunctionName=function_name,
@@ -1081,7 +1088,7 @@ def grant_gateway_invoke_permission(function_name, region='us-east-1'):
         )
         print(f"✓ Gateway invoke permission added to Lambda")
         print(f"  Principal: bedrock-agentcore.amazonaws.com")
-        
+
     except ClientError as e:
         if e.response['Error']['Code'] == 'ResourceConflictException':
             print(f"⚠ Permission already exists (this is fine)")
@@ -1093,16 +1100,16 @@ def grant_gateway_invoke_permission(function_name, region='us-east-1'):
 def create_lambda_role(role_name, description='Lambda execution role'):
     """
     Create basic IAM role for Lambda with execution permissions.
-    
+
     Args:
         role_name (str): Name of the IAM role
         description (str): Role description
-        
+
     Returns:
         str: Role ARN
     """
     iam_client = boto3.client('iam')
-    
+
     # Trust policy for Lambda
     trust_policy = {
         "Version": "2012-10-17",
@@ -1112,7 +1119,7 @@ def create_lambda_role(role_name, description='Lambda execution role'):
             "Action": "sts:AssumeRole"
         }]
     }
-    
+
     try:
         role_response = iam_client.create_role(
             RoleName=role_name,
@@ -1121,7 +1128,7 @@ def create_lambda_role(role_name, description='Lambda execution role'):
         )
         role_arn = role_response['Role']['Arn']
         print(f"✓ IAM role created: {role_name}")
-        
+
     except ClientError as e:
         if e.response['Error']['Code'] == 'EntityAlreadyExists':
             print(f"⚠ Role already exists: {role_name}")
@@ -1129,16 +1136,16 @@ def create_lambda_role(role_name, description='Lambda execution role'):
             role_arn = role_response['Role']['Arn']
         else:
             raise
-    
+
     # Attach basic Lambda execution policy
     iam_client.attach_role_policy(
         RoleName=role_name,
         PolicyArn='arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
     )
-    
+
     # Wait for role to propagate
     time.sleep(10)
-    
+
     return role_arn
 
 
@@ -1165,7 +1172,7 @@ def delete_lambda_functions(function_names, region='us-east-1'):
     """
     lambda_client = boto3.client('lambda', region_name=region)
     print(f"Deleting {len(function_names)} Lambda functions...")
-    
+
     for function_name in function_names:
         try:
             lambda_client.delete_function(FunctionName=function_name)
@@ -1182,7 +1189,7 @@ def delete_iam_role(role_name):
 
     """
     iam_client = boto3.client('iam')
-    
+
     try:
         # Detach managed policies
         attached_policies = iam_client.list_attached_role_policies(RoleName=role_name)
@@ -1191,7 +1198,7 @@ def delete_iam_role(role_name):
                 RoleName=role_name,
                 PolicyArn=policy['PolicyArn']
             )
-        
+
         # Delete inline policies
         inline_policies = iam_client.list_role_policies(RoleName=role_name)
         for policy_name in inline_policies['PolicyNames']:
@@ -1199,11 +1206,11 @@ def delete_iam_role(role_name):
                 RoleName=role_name,
                 PolicyName=policy_name
             )
-        
+
         # Delete role
         iam_client.delete_role(RoleName=role_name)
         print(f"✓ Deleted IAM role: {role_name}")
-        
+
     except ClientError as e:
         if e.response['Error']['Code'] != 'NoSuchEntity':
             print(f"✗ Failed to delete role {role_name}: {e}")
@@ -1212,10 +1219,10 @@ def delete_iam_role(role_name):
 def delete_cognito_user_pool(user_pool_id, region='us-east-1'):
     """
     Delete Cognito user pool.
-    
+
     """
     cognito_client = boto3.client('cognito-idp', region_name=region)
-    
+
     try:
         cognito_client.delete_user_pool(UserPoolId=user_pool_id)
         print(f"✓ Deleted Cognito user pool: {user_pool_id}")
@@ -1230,10 +1237,27 @@ def delete_dynamodb_table(table_name, region='us-east-1'):
 
     """
     dynamodb_client = boto3.client('dynamodb', region_name=region)
-    
+
     try:
         dynamodb_client.delete_table(TableName=table_name)
         print(f"✓ Deleted DynamoDB table: {table_name}")
     except ClientError as e:
         if e.response['Error']['Code'] != 'ResourceNotFoundException':
             print(f"✗ Failed to delete table: {e}")
+
+def delete_cognito_pool_resource_server(user_pool_id, resource_server_identifier, region='us-west-2'):
+    """
+    Delete a resource server from a Cognito user pool.
+
+    """
+    cognito_client = boto3.client('cognito-idp', region_name=region)
+
+    try:
+        cognito_client.delete_resource_server(
+            UserPoolId=user_pool_id,
+            Identifier=resource_server_identifier
+        )
+        print(f"✓ Deleted resource server: {resource_server_identifier}")
+    except ClientError as e:
+        if e.response['Error']['Code'] != 'ResourceNotFoundException':
+            print(f"✗ Failed to delete resource server: {e}")
